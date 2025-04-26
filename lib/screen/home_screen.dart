@@ -8,14 +8,15 @@ import 'package:ping_chat/main.dart';
 import 'package:ping_chat/screen/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.name});
+  final String name;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> _devices = [];
+  final Map<String, String> _devices = {}; // IP -> Name mapping
   bool _isScanning = false;
   String? _localIP;
   late List<Socket> _openSockets;
@@ -80,13 +81,38 @@ class _HomeScreenState extends State<HomeScreen> {
         port,
         timeout: Duration(milliseconds: 300),
       );
+
+      // Send our name to the other device
+      socket.write('NAME:${widget.name}\n');
+
+      // Read the response to get their name
+      final completer = Completer<String>();
+      socket.listen(
+        (data) {
+          final response = String.fromCharCodes(data);
+          if (response.startsWith('NAME:')) {
+            completer.complete(response);
+          }
+        },
+        onDone: () {
+          if (!completer.isCompleted) {
+            completer.complete('');
+          }
+        },
+      );
+
+      final response = await completer.future;
+      if (response.isNotEmpty) {
+        final remoteName = response.substring(5).trim();
+        if (_localIP != null && ip != _localIP) {
+          setState(() {
+            _devices[ip] = remoteName;
+          });
+        }
+      }
+
       _openSockets.add(socket);
       socket.destroy();
-      if (_localIP != null && ip != _localIP) {
-        setState(() {
-          _devices.add(ip);
-        });
-      }
     } catch (_) {}
   }
 
@@ -99,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PingChat'),
+        title: Text('PingChat - ${widget.name}'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -115,17 +141,22 @@ class _HomeScreenState extends State<HomeScreen> {
               : ListView.builder(
                 itemCount: _devices.length,
                 itemBuilder: (context, index) {
+                  final ip = _devices.keys.elementAt(index);
+                  final name = _devices[ip]!;
                   return ListTile(
                     leading: const Icon(Icons.device_hub),
-                    title: Text(_devices[index]),
+                    title: Text(name),
+                    subtitle: Text(ip),
+
                     onTap: () async {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (context) => ChatScreen(
-                                peerIP: _devices[index],
+                                peerIP: ip,
                                 server: server,
+                                peerName: name,
                               ),
                         ),
                       );

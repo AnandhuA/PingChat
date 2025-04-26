@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ping_chat/screen/chosse_name.dart';
+import 'package:ping_chat/screen/splash_screen.dart';
 import 'package:ping_chat/server.dart';
 
 final server = Server();
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ChosseName(),
+      home: SplashScreen(),
       themeMode: ThemeMode.system,
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),

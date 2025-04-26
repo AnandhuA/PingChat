@@ -7,8 +7,14 @@ import 'package:ping_chat/server.dart';
 class ChatScreen extends StatefulWidget {
   final String peerIP;
   final Server? server;
+  final String peerName;
 
-  const ChatScreen({super.key, required this.peerIP, this.server});
+  const ChatScreen({
+    super.key,
+    required this.peerIP,
+    required this.peerName,
+    this.server,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -51,7 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
     widget.server!.onMessageReceived = (message) {
       log("Message from client: $message");
       setState(() {
-        _messages.add('client: $message');
+        _messages.add('${widget.peerName}: $message');
       });
     };
   }
@@ -65,7 +71,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Chat with ${widget.peerIP}')),
+      appBar: AppBar(title: Text('Chat with ${widget.peerName}')),
       body: Column(
         children: [
           Expanded(

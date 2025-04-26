@@ -4,8 +4,13 @@ import 'dart:io';
 class Server {
   ServerSocket? _serverSocket;
   final List<Socket> _clients = [];
+  String? _name;
 
-  Function(String)? onMessageReceived; // <-- ADD THIS
+  Function(String)? onMessageReceived;
+
+  void setName(String name) {
+    _name = name;
+  }
 
   Future<void> startServer() async {
     try {
@@ -20,11 +25,18 @@ class Server {
           (List<int> data) {
             String message = String.fromCharCodes(data).trim();
             log('Received message: $message');
+
+            // Handle name exchange
+            if (message.startsWith('NAME:')) {
+              if (_name != null) {
+                socket.write('NAME:$_name\n');
+              }
+              return;
+            }
+
             _broadcastMessage(message, socket);
             if (onMessageReceived != null) {
               onMessageReceived!(message);
-            } else {
-              log("null----");
             }
           },
           onError: (error) {
