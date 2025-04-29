@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ping_chat/bloc/Devices_list/devices_list_cubit.dart';
 import 'package:ping_chat/screen/splash_screen.dart';
 import 'package:ping_chat/server.dart';
 
@@ -13,12 +15,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
-      themeMode: ThemeMode.system,
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
+    return MultiBlocProvider(
+      providers: [BlocProvider(create: (context) => DevicesListCubit())],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: SplashScreen(),
+        themeMode: ThemeMode.system,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+      ),
     );
   }
 }

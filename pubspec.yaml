@@ -14,10 +14,10 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  bloc: ^9.0.0
   network_info_plus: ^6.1.4
   ping_discover_network_forked: ^0.0.1
   shared_preferences: ^2.5.3
+  flutter_bloc: ^9.1.0
 
 dev_dependencies:
   flutter_test:

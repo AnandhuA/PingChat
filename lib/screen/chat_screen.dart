@@ -89,6 +89,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    onSubmitted: (v) => _sendMessage(v),
                     decoration: const InputDecoration(
                       hintText: 'Enter your message...',
                     ),
