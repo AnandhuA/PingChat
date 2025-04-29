@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ping_chat/bloc/Devices_list/devices_list_cubit.dart';
+import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/main.dart';
 import 'package:ping_chat/screen/chat_screen.dart';
 
@@ -58,22 +59,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final ip = devices.keys.elementAt(index);
                     final name = devices[ip]!;
-                    return ListTile(
-                      leading: const Icon(Icons.device_hub),
-                      title: Text(name),
-                      subtitle: Text(ip),
 
-                      onTap: () async {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ChatScreen(
-                                  peerIP: ip,
-                                  server: server,
-                                  peerName: name,
-                                ),
-                          ),
+                    return BlocBuilder<MessageCubit, MessageState>(
+                      builder: (context, msgState) {
+                        bool hasUnread = false;
+                        List<String> messages = [];
+
+                        if (msgState is MessageUpdated) {
+                          hasUnread = msgState.unreadIPs.contains(ip);
+                          messages = msgState.messages[ip] ?? [];
+                        }
+
+                        return ListTile(
+                          leading: Icon(Icons.mark_chat_unread),
+                          title: Text(name),
+                          subtitle: Text(ip),
+                          trailing:
+                              hasUnread
+                                  ? CircleAvatar(radius: 15, child: Text("?"))
+                                  : null,
+                          onTap: () {
+                            context.read<MessageCubit>().markAsRead(
+                              ip,
+                            ); // Clear unread
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ChatScreen(
+                                      peerIP: ip,
+                                      server: server,
+                                      peerName: name,
+                                      message: messages,
+                                    ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );

@@ -8,12 +8,14 @@ class ChatScreen extends StatefulWidget {
   final String peerIP;
   final Server? server;
   final String peerName;
+  final List<String> message;
 
   const ChatScreen({
     super.key,
     required this.peerIP,
     required this.peerName,
     this.server,
+    required this.message,
   });
 
   @override
@@ -22,12 +24,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<String> _messages = [];
+  late List<String> _messages;
 
   Socket? _socket;
 
   @override
   void initState() {
+    _messages = widget.message;
     super.initState();
     _connectToServer();
     _reciveMessage();

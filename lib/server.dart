@@ -6,7 +6,9 @@ class Server {
   final List<Socket> _clients = [];
   String? _name;
 
-  Function(String)? onMessageReceived;
+  Function(String message)? onMessageReceived; // for active screen
+  Function(String ip, String message)?
+  onGlobalMessageReceived; // new global handler
 
   void setName(String name) {
     _name = name;
@@ -18,15 +20,15 @@ class Server {
       log('Server started on port 8080');
 
       _serverSocket!.listen((Socket socket) {
-        log('Connection from ${socket.remoteAddress.address}');
+        final remoteIp = socket.remoteAddress.address;
+        log('Connection from $remoteIp');
         _clients.add(socket);
 
         socket.listen(
           (List<int> data) {
-            String message = String.fromCharCodes(data).trim();
+            final message = String.fromCharCodes(data).trim();
             log('Received message: $message');
 
-            // Handle name exchange
             if (message.startsWith('NAME:')) {
               if (_name != null) {
                 socket.write('NAME:$_name\n');
@@ -35,15 +37,22 @@ class Server {
             }
 
             _broadcastMessage(message, socket);
+
+            // Send to ChatScreen
             if (onMessageReceived != null) {
               onMessageReceived!(message);
+            }
+
+            // Send to global handler
+            if (onGlobalMessageReceived != null) {
+              onGlobalMessageReceived!(remoteIp, message);
             }
           },
           onError: (error) {
             log("Error receiving message: $error");
           },
           onDone: () {
-            log("Connection closed with ${socket.remoteAddress.address}");
+            log("Connection closed with $remoteIp");
             _clients.remove(socket);
             socket.close();
           },

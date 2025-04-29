@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ping_chat/bloc/Devices_list/devices_list_cubit.dart';
+import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/screen/splash_screen.dart';
 import 'package:ping_chat/server.dart';
 
 final server = Server();
+MessageCubit? messageCubitGlobal;
 void main() {
   server.startServer();
+  server.onGlobalMessageReceived = (ip, message) {
+    // Use Bloc directly via global context
+    messageCubitGlobal?.addMessage(ip, message); // Define below
+  };
+
   runApp(const MyApp());
 }
 
@@ -16,7 +23,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [BlocProvider(create: (context) => DevicesListCubit())],
+      providers: [
+        BlocProvider(create: (context) => DevicesListCubit()),
+       BlocProvider(
+          create: (context) {
+            final cubit = MessageCubit();
+            messageCubitGlobal = cubit; 
+            return cubit;
+          },
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         home: SplashScreen(),
