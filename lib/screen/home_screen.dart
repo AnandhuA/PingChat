@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () {
                             context.read<MessageCubit>().markAsRead(
                               ip,
-                            ); // Clear unread
+                            );
                             Navigator.push(
                               context,
                               MaterialPageRoute(

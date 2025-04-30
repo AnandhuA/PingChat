@@ -12,7 +12,7 @@ class MessageCubit extends Cubit<MessageState> {
   void addMessage(String ip, String message) {
     _messages.putIfAbsent(ip, () => []);
     _messages[ip]!.add(message);
-    _unread.add(ip); // 👈 mark as unread
+    _unread.add(ip);
     emit(MessageUpdated(Map.from(_messages), Set.from(_unread)));
   }
 

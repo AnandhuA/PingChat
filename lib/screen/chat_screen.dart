@@ -48,6 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage(String message) {
     if (message.isNotEmpty && _socket != null) {
       _socket!.write('$message\n');
+      if (!mounted) return;
       setState(() {
         _messages.add('You: $message');
       });
@@ -56,9 +57,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _reciveMessage() {
-    // log("reeee");
     widget.server!.onMessageReceived = (message) {
       log("Message from client: $message");
+      if (!mounted) return;
       setState(() {
         _messages.add('${widget.peerName}: $message');
       });
