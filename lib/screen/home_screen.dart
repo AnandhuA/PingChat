@@ -63,11 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     return BlocBuilder<MessageCubit, MessageState>(
                       builder: (context, msgState) {
                         bool hasUnread = false;
-                        List<String> messages = [];
 
                         if (msgState is MessageUpdated) {
                           hasUnread = msgState.unreadIPs.contains(ip);
-                          messages = msgState.messages[ip] ?? [];
                         }
 
                         return ListTile(
@@ -79,9 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ? CircleAvatar(radius: 15, child: Text("?"))
                                   : null,
                           onTap: () {
-                            context.read<MessageCubit>().markAsRead(
-                              ip,
-                            );
+                            context.read<MessageCubit>().markAsRead(ip);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -90,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       peerIP: ip,
                                       server: server,
                                       peerName: name,
-                                      message: messages,
                                     ),
                               ),
                             );
