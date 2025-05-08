@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/core/helper_funtions.dart';
@@ -148,49 +149,64 @@ class _ChatScreenState extends State<ChatScreen> {
                                 isMe
                                     ? Alignment.centerLeft
                                     : Alignment.centerRight,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    isMe
-                                        ? Colors.blueAccent
-                                        : Colors.grey.shade300,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  topRight: Radius.circular(12),
-                                  bottomLeft: Radius.circular(isMe ? 0 : 12),
-                                  bottomRight: Radius.circular(isMe ? 12 : 0),
+                            child: GestureDetector(
+                              onLongPress: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: msg['text'] ?? ''),
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Copied to clipboard'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    msg['text'] ?? '',
-                                    style: TextStyle(
-                                      color:
-                                          isMe ? Colors.white : Colors.black87,
-                                    ),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isMe
+                                          ? Colors.blueAccent
+                                          : Colors.grey.shade300,
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                    topRight: Radius.circular(12),
+                                    bottomLeft: Radius.circular(isMe ? 0 : 12),
+                                    bottomRight: Radius.circular(isMe ? 12 : 0),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    formatTime(DateTime.now()),
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      color:
-                                          isMe
-                                              ? Colors.white70
-                                              : Colors.black54,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      msg['text'] ?? '',
+                                      style: TextStyle(
+                                        color:
+                                            isMe
+                                                ? Colors.white
+                                                : Colors.black87,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      formatTime(DateTime.now()),
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        color:
+                                            isMe
+                                                ? Colors.white70
+                                                : Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
