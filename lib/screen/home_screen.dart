@@ -90,7 +90,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
 
                         return ListTile(
-                          leading: Icon(Icons.mark_chat_unread),
+                          leading: CircleAvatar(
+                            radius: 25,
+                            child: Center(
+                              child: Text(
+                                name[0],
+                                style: TextStyle(fontSize: 25),
+                              ),
+                            ),
+                          ),
                           title: Text(name),
                           subtitle: Text(ip),
                           trailing:

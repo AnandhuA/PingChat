@@ -4,6 +4,7 @@ import 'package:ping_chat/bloc/Devices_list/devices_list_cubit.dart';
 import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/screen/splash_screen.dart';
 import 'package:ping_chat/server.dart';
+import 'package:ping_chat/theme/theme_class.dart';
 
 final server = Server();
 MessageCubit? messageCubitGlobal;
@@ -47,8 +48,8 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             home: SplashScreen(),
             themeMode: ThemeMode.system,
-            theme: ThemeData.light(),
-            darkTheme: ThemeData.dark(),
+            theme: ThemeClass.lightTheme,
+            darkTheme: ThemeClass.darkTheme,
           );
         },
       ),

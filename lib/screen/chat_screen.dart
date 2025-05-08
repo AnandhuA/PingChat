@@ -97,116 +97,134 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Chat with ${widget.peerName}')),
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          children: [
-            Expanded(
-              child: BlocConsumer<MessageCubit, MessageState>(
-                listenWhen: (prev, curr) => curr is MessageUpdated,
-                listener: (context, state) {
-                  if (state is MessageUpdated) {
-                    final messages = state.messages[widget.peerIP] ?? [];
-                    if (messages.isNotEmpty) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _scrollToBottom();
-                      });
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        context.read<MessageCubit>().markAsRead(widget.peerIP);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Chat with ${widget.peerName}'),
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            onPressed: () {
+              context.read<MessageCubit>().markAsRead(widget.peerIP);
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.arrow_back_ios_new_sharp),
+          ),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              Expanded(
+                child: BlocConsumer<MessageCubit, MessageState>(
+                  listenWhen: (prev, curr) => curr is MessageUpdated,
+                  listener: (context, state) {
+                    if (state is MessageUpdated) {
+                      final messages = state.messages[widget.peerIP] ?? [];
+                      if (messages.isNotEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToBottom();
+                        });
+                      }
                     }
-                  }
-                },
-                builder: (context, state) {
-                  if (state is MessageUpdated) {
-                    final messages = state.messages[widget.peerIP] ?? [];
+                  },
+                  builder: (context, state) {
+                    if (state is MessageUpdated) {
+                      final messages = state.messages[widget.peerIP] ?? [];
 
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      reverse: false,
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isMe = msg['sender'] == 'You';
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        reverse: false,
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = messages[index];
+                          final isMe = msg['sender'] == 'You';
 
-                        return Align(
-                          alignment:
-                              isMe
-                                  ? Alignment.centerLeft
-                                  : Alignment.centerRight,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  isMe
-                                      ? Colors.blueAccent
-                                      : Colors.grey.shade300,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
-                                bottomLeft: Radius.circular(isMe ? 0 : 12),
-                                bottomRight: Radius.circular(isMe ? 12 : 0),
+                          return Align(
+                            alignment:
+                                isMe
+                                    ? Alignment.centerLeft
+                                    : Alignment.centerRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isMe
+                                        ? Colors.blueAccent
+                                        : Colors.grey.shade300,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  topRight: Radius.circular(12),
+                                  bottomLeft: Radius.circular(isMe ? 0 : 12),
+                                  bottomRight: Radius.circular(isMe ? 12 : 0),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    msg['text'] ?? '',
+                                    style: TextStyle(
+                                      color:
+                                          isMe ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    formatTime(DateTime.now()),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      color:
+                                          isMe
+                                              ? Colors.white70
+                                              : Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  msg['text'] ?? '',
-                                  style: TextStyle(
-                                    color: isMe ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  formatTime(DateTime.now()),
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    color:
-                                        isMe ? Colors.white70 : Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                },
+                          );
+                        },
+                      );
+                    } else {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      focusNode: _focusNode,
-                      controller: _messageController,
-                      onSubmitted: (messaeg) => _sendMessage(messaeg),
-                      decoration: const InputDecoration(
-                        hintText: 'Enter your message...',
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        focusNode: _focusNode,
+                        controller: _messageController,
+                        onSubmitted: (message) => _sendMessage(message),
+                        decoration: const InputDecoration(
+                          hintText: 'Enter your message...',
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () => _sendMessage(_messageController.text),
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.send),
+                      onPressed: () => _sendMessage(_messageController.text),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
