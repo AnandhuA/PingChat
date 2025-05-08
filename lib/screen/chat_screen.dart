@@ -26,6 +26,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
 
   Socket? _socket;
 
@@ -34,11 +35,16 @@ class _ChatScreenState extends State<ChatScreen> {
     context.read<MessageCubit>().markAsRead(widget.peerIP);
     super.initState();
     _connectToServer();
-    _listenToIncomingMessages();
+    Future.delayed(Duration(milliseconds: 300), () {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   Future<void> _connectToServer() async {
     try {
+      if (_socket != null) {
+        await _socket!.close();
+      }
       _socket = await Socket.connect(widget.peerIP, 8080);
       log('Connected to ${widget.peerIP}');
     } catch (e) {
@@ -47,26 +53,33 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _sendMessage(String message) {
-    if (message.isNotEmpty && _socket != null) {
-      _socket!.write('$message\n');
-      if (!mounted) return;
-      context.read<MessageCubit>().addMessage(
-        widget.peerIP,
-        message,
-        isMe: true,
-      );
-      _scrollToBottom();
-      _messageController.clear();
-    }
-  }
-
-  void _listenToIncomingMessages() {
-    widget.server?.onGlobalMessageReceived = (ip, message) {
-      if (ip == widget.peerIP) {
-        context.read<MessageCubit>().addMessage(ip, message);
+    if (message.isNotEmpty) {
+      if (_socket == null) {
+        _connectToServer().then((_) {
+          if (_socket != null) {
+            _socket!.write('$message\n');
+            if (!mounted) return;
+            context.read<MessageCubit>().addMessage(
+              widget.peerIP,
+              message,
+              isMe: true,
+            );
+            _scrollToBottom();
+            _messageController.clear();
+          }
+        });
+      } else {
+        _socket!.write('$message\n');
+        if (!mounted) return;
+        context.read<MessageCubit>().addMessage(
+          widget.peerIP,
+          message,
+          isMe: true,
+        );
         _scrollToBottom();
+        _messageController.clear();
       }
-    };
+    }
   }
 
   void _scrollToBottom() {
@@ -91,7 +104,18 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Column(
           children: [
             Expanded(
-              child: BlocBuilder<MessageCubit, MessageState>(
+              child: BlocConsumer<MessageCubit, MessageState>(
+                listenWhen: (prev, curr) => curr is MessageUpdated,
+                listener: (context, state) {
+                  if (state is MessageUpdated) {
+                    final messages = state.messages[widget.peerIP] ?? [];
+                    if (messages.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToBottom();
+                      });
+                    }
+                  }
+                },
                 builder: (context, state) {
                   if (state is MessageUpdated) {
                     final messages = state.messages[widget.peerIP] ?? [];
@@ -142,9 +166,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  formatTime(
-                                    DateTime.now(),
-                                  ), // Placeholder for timestamp
+                                  formatTime(DateTime.now()),
                                   style: TextStyle(
                                     fontSize: 8,
                                     color:
@@ -169,8 +191,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Expanded(
                     child: TextField(
+                      focusNode: _focusNode,
                       controller: _messageController,
-                      onSubmitted: (v) => _sendMessage(v),
+                      onSubmitted: (messaeg) => _sendMessage(messaeg),
                       decoration: const InputDecoration(
                         hintText: 'Enter your message...',
                       ),

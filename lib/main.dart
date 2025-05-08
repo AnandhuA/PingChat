@@ -8,11 +8,11 @@ import 'package:ping_chat/server.dart';
 final server = Server();
 MessageCubit? messageCubitGlobal;
 void main() {
-  server.startServer();
-  server.onGlobalMessageReceived = (ip, message) {
-    // Use Bloc directly via global context
-    messageCubitGlobal?.addMessage(ip, message); // Define below
-  };
+  // server.startServer();
+  // server.onGlobalMessageReceived = (ip, message) {
+  //   // Use Bloc directly via global context
+  //   messageCubitGlobal?.addMessage(ip, message); // Define below
+  // };
 
   runApp(const MyApp());
 }
@@ -25,20 +25,32 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => DevicesListCubit()),
-       BlocProvider(
+        BlocProvider(
           create: (context) {
             final cubit = MessageCubit();
-            messageCubitGlobal = cubit; 
+            messageCubitGlobal = cubit;
             return cubit;
           },
         ),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: SplashScreen(),
-        themeMode: ThemeMode.system,
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark(),
+      child: Builder(
+        builder: (context) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Now safe to start server
+            server.startServer();
+            server.onGlobalMessageReceived = (ip, message) {
+              messageCubitGlobal?.addMessage(ip, message);
+            };
+          });
+
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: SplashScreen(),
+            themeMode: ThemeMode.system,
+            theme: ThemeData.light(),
+            darkTheme: ThemeData.dark(),
+          );
+        },
       ),
     );
   }

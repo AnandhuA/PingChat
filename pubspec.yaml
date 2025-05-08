@@ -18,6 +18,7 @@ dependencies:
   ping_discover_network_forked: ^0.0.1
   shared_preferences: ^2.5.3
   flutter_bloc: ^9.1.0
+  lottie: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,8 @@ dev_dependencies:
 flutter:
 
   uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/animations/
+

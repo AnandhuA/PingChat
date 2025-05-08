@@ -1,7 +1,10 @@
+// ignore_for_file: invalid_use_of_protected_member, use_build_context_synchronously, invalid_use_of_visible_for_testing_member
+
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:ping_chat/bloc/Devices_list/devices_list_cubit.dart';
 import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/main.dart';
@@ -48,12 +51,30 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, state) {
           log("$state");
           if (state is DevicesListLoadingState) {
-            return Center(child: CircularProgressIndicator());
+            Future.delayed(const Duration(seconds: 10), () {
+              if (mounted &&
+                  context.read<DevicesListCubit>().state
+                      is DevicesListLoadingState) {
+                context.read<DevicesListCubit>().emit(
+                  DevicesListSuccessState(devices: {}),
+                );
+              }
+            });
+            return Center(
+              child: Lottie.asset('assets/animations/loading.json'),
+            );
           }
           if (state is DevicesListSuccessState) {
             final devices = state.devices;
             return devices.isEmpty
-                ? const Center(child: Text('No devices found'))
+                ? Center(
+                  child: Column(
+                    children: [
+                      Lottie.asset('assets/animations/no data.json'),
+                      Text('No Devices Found', style: TextStyle(fontSize: 30)),
+                    ],
+                  ),
+                )
                 : ListView.builder(
                   itemCount: devices.length,
                   itemBuilder: (context, index) {
