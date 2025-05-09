@@ -6,6 +6,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:ping_chat/bloc/Message_cubit/message_cubit.dart';
 import 'package:ping_chat/core/helper_funtions.dart';
 import 'package:ping_chat/server.dart';
@@ -31,6 +32,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   bool _showEmojiPicker = false;
+  String? _animationAsset;
+  bool _showAnimation = false;
 
   Socket? _socket;
 
@@ -62,6 +65,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _connectToServer().then((_) {
           if (_socket != null) {
             _socket!.write('$message\n');
+            _triggerEmojiAnimation(message);
+
             if (!mounted) return;
             context.read<MessageCubit>().addMessage(
               widget.peerIP,
@@ -74,6 +79,7 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       } else {
         _socket!.add(utf8.encode('$message\n'));
+        _triggerEmojiAnimation(message);
 
         if (!mounted) return;
         context.read<MessageCubit>().addMessage(
@@ -84,6 +90,26 @@ class _ChatScreenState extends State<ChatScreen> {
         _scrollToBottom();
         _messageController.clear();
       }
+    }
+  }
+
+  void _triggerEmojiAnimation(String message) {
+    _animationAsset = findEmoji(message);
+    if (_animationAsset != null) {
+      setState(() {
+        _showAnimation = true;
+      });
+
+      // Hide animation after 3 seconds
+      Future.delayed(Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() {
+            _showAnimation = false;
+          });
+        }
+      });
+    } else {
+      log("noo----");
     }
   }
 
@@ -118,163 +144,187 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: Icon(Icons.arrow_back_ios_new_sharp),
           ),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            children: [
-              Expanded(
-                child: BlocConsumer<MessageCubit, MessageState>(
-                  listenWhen: (prev, curr) => curr is MessageUpdated,
-                  listener: (context, state) {
-                    if (state is MessageUpdated) {
-                      final messages = state.messages[widget.peerIP] ?? [];
-                      if (messages.isNotEmpty) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _scrollToBottom();
-                        });
-                      }
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is MessageUpdated) {
-                      final messages = state.messages[widget.peerIP] ?? [];
+        body: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: BlocConsumer<MessageCubit, MessageState>(
+                      listenWhen: (prev, curr) => curr is MessageUpdated,
+                      listener: (context, state) {
+                        if (state is MessageUpdated) {
+                          final messages = state.messages[widget.peerIP] ?? [];
+                          if (messages.isNotEmpty) {
+                            final lastMessage = messages.last['text'] ?? '';
+                            _animationAsset = findEmoji(lastMessage);
+                            if (_animationAsset != null) {
+                              setState(() {
+                                _showAnimation = true;
+                              });
+                              Future.delayed(Duration(seconds: 3), () {
+                                setState(() {
+                                  _showAnimation = false;
+                                });
+                              });
+                            }
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _scrollToBottom();
+                            });
+                          }
+                        }
+                      },
+                      builder: (context, state) {
+                        if (state is MessageUpdated) {
+                          final messages = state.messages[widget.peerIP] ?? [];
 
-                      return ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        reverse: false,
-                        itemCount: messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = messages[index];
-                          final isMe = msg['sender'] == 'You';
-                          return Align(
-                            alignment:
-                                isMe
-                                    ? Alignment.centerLeft
-                                    : Alignment.centerRight,
-                            child: GestureDetector(
-                              onLongPress: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: msg['text'] ?? ''),
+                          return ListView.builder(
+                            controller: _scrollController,
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            reverse: false,
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = messages[index];
+                              final isMe = msg['sender'] == 'You';
+                              return Align(
+                                alignment:
+                                    isMe
+                                        ? Alignment.centerLeft
+                                        : Alignment.centerRight,
+                                child: GestureDetector(
+                                  onLongPress: () {
+                                    Clipboard.setData(
+                                      ClipboardData(text: msg['text'] ?? ''),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Copied to clipboard'),
+                                        duration: Duration(seconds: 1),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          isMe
+                                              ? Colors.blueAccent
+                                              : Colors.grey.shade300,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(12),
+                                        topRight: Radius.circular(12),
+                                        bottomLeft: Radius.circular(
+                                          isMe ? 0 : 12,
+                                        ),
+                                        bottomRight: Radius.circular(
+                                          isMe ? 12 : 0,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          msg['text'] ?? '',
+                                          style: TextStyle(
+                                            color:
+                                                isMe
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          formatTime(DateTime.now()),
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color:
+                                                isMe
+                                                    ? Colors.white70
+                                                    : Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        } else {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.emoji_emotions_outlined),
+                              onPressed: () {
+                                setState(
+                                  () => _showEmojiPicker = !_showEmojiPicker,
                                 );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Copied to clipboard'),
-                                    duration: Duration(seconds: 1),
+                              },
+                            ),
+                            Expanded(
+                              child: TextField(
+                                controller: _messageController,
+                                focusNode: _focusNode,
+                                onSubmitted: (message) => _sendMessage(message),
+                                decoration: const InputDecoration(
+                                  hintText: 'Enter your message...',
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.send),
+                              onPressed:
+                                  () => _sendMessage(_messageController.text),
+                            ),
+                          ],
+                        ),
+                        Offstage(
+                          offstage: !_showEmojiPicker,
+                          child: SizedBox(
+                            height: 250,
+                            child: EmojiPicker(
+                              onEmojiSelected: (category, emoji) {
+                                _messageController.text += emoji.emoji;
+                                _messageController
+                                    .selection = TextSelection.fromPosition(
+                                  TextPosition(
+                                    offset: _messageController.text.length,
                                   ),
                                 );
                               },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      isMe
-                                          ? Colors.blueAccent
-                                          : Colors.grey.shade300,
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: Radius.circular(12),
-                                    topRight: Radius.circular(12),
-                                    bottomLeft: Radius.circular(isMe ? 0 : 12),
-                                    bottomRight: Radius.circular(isMe ? 12 : 0),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      msg['text'] ?? '',
-                                      style: TextStyle(
-                                        color:
-                                            isMe
-                                                ? Colors.white
-                                                : Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      formatTime(DateTime.now()),
-                                      style: TextStyle(
-                                        fontSize: 8,
-                                        color:
-                                            isMe
-                                                ? Colors.white70
-                                                : Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    } else {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.emoji_emotions_outlined),
-                          onPressed: () {
-                            setState(
-                              () => _showEmojiPicker = !_showEmojiPicker,
-                            );
-                            if (!_showEmojiPicker) _focusNode.requestFocus();
-                          },
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: _messageController,
-                            focusNode: _focusNode,
-                            onSubmitted: (message) => _sendMessage(message),
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your message...',
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.send),
-                          onPressed:
-                              () => _sendMessage(_messageController.text),
-                        ),
                       ],
                     ),
-                    Offstage(
-                      offstage: !_showEmojiPicker,
-                      child: SizedBox(
-                        height: 250,
-                        child: EmojiPicker(
-                          onEmojiSelected: (category, emoji) {
-                            _messageController.text += emoji.emoji;
-                            _messageController
-                                .selection = TextSelection.fromPosition(
-                              TextPosition(
-                                offset: _messageController.text.length,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            if (_showAnimation && _animationAsset != null)
+              Center(child: Lottie.asset(_animationAsset!, repeat: false)),
+          ],
         ),
       ),
     );

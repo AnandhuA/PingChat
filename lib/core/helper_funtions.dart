@@ -8,3 +8,24 @@ String formatTime(DateTime dt) {
 
   return '$hour:$minute $period';
 }
+
+//---- find emoji -------------
+
+String? findEmoji(String message) {
+  final emojiToAnimation = {
+    //love
+    '❤️': 'assets/animations/love.json',
+    '💖': 'assets/animations/love.json',
+    '💗': 'assets/animations/love.json',
+    '💓': 'assets/animations/love.json',
+    '💘': 'assets/animations/love.json',
+  };
+
+  for (var emoji in emojiToAnimation.keys) {
+    if (message.contains(emoji)) {
+      return emojiToAnimation[emoji];
+    }
+  }
+
+  return null;
+}
