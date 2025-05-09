@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  bool _showEmojiPicker = false;
 
   Socket? _socket;
 
@@ -70,7 +73,8 @@ class _ChatScreenState extends State<ChatScreen> {
           }
         });
       } else {
-        _socket!.write('$message\n');
+        _socket!.add(utf8.encode('$message\n'));
+
         if (!mounted) return;
         context.read<MessageCubit>().addMessage(
           widget.peerIP,
@@ -143,7 +147,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         itemBuilder: (context, index) {
                           final msg = messages[index];
                           final isMe = msg['sender'] == 'You';
-
                           return Align(
                             alignment:
                                 isMe
@@ -220,21 +223,52 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        focusNode: _focusNode,
-                        controller: _messageController,
-                        onSubmitted: (message) => _sendMessage(message),
-                        decoration: const InputDecoration(
-                          hintText: 'Enter your message...',
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.emoji_emotions_outlined),
+                          onPressed: () {
+                            setState(
+                              () => _showEmojiPicker = !_showEmojiPicker,
+                            );
+                            if (!_showEmojiPicker) _focusNode.requestFocus();
+                          },
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            focusNode: _focusNode,
+                            onSubmitted: (message) => _sendMessage(message),
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your message...',
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed:
+                              () => _sendMessage(_messageController.text),
+                        ),
+                      ],
+                    ),
+                    Offstage(
+                      offstage: !_showEmojiPicker,
+                      child: SizedBox(
+                        height: 250,
+                        child: EmojiPicker(
+                          onEmojiSelected: (category, emoji) {
+                            _messageController.text += emoji.emoji;
+                            _messageController
+                                .selection = TextSelection.fromPosition(
+                              TextPosition(
+                                offset: _messageController.text.length,
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: () => _sendMessage(_messageController.text),
                     ),
                   ],
                 ),

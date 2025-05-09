@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
@@ -26,33 +27,35 @@ class Server {
 
         socket.listen(
           (List<int> data) {
-            final message = String.fromCharCodes(data).trim();
-            log('Received message: $message');
+            try {
+              final message = utf8.decode(data).trim();
+              log('Received message: $message');
 
-            if (message.startsWith('NAME:')) {
-              if (_name != null) {
-                socket.write('NAME:$_name\n');
+              if (message.startsWith('NAME:')) {
+                if (_name != null) {
+                  socket.add(utf8.encode('NAME:$_name\n'));
+                }
+                return;
               }
-              return;
-            }
 
-            _broadcastMessage(message, socket);
+              _broadcastMessage(message, socket);
 
-            // Send to ChatScreen
-            if (onMessageReceived != null) {
-              onMessageReceived!(message);
-            }
+              if (onMessageReceived != null) {
+                onMessageReceived!(message);
+              }
 
-            // Send to global handler
-            if (onGlobalMessageReceived != null) {
-              onGlobalMessageReceived!(remoteIp, message);
+              if (onGlobalMessageReceived != null) {
+                onGlobalMessageReceived!(socket.remoteAddress.address, message);
+              }
+            } catch (e) {
+              log('Decoding error: $e');
             }
           },
           onError: (error) {
             log("Error receiving message: $error");
           },
           onDone: () {
-            log("Connection closed with $remoteIp");
+            log("Connection closed with ${socket.remoteAddress.address}");
             _clients.remove(socket);
             socket.close();
           },
